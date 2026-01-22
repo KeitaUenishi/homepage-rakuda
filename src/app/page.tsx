@@ -1,65 +1,144 @@
-import Image from "next/image";
+import { getNextLive } from "@/lib/mdx";
+import LiveCard from "@/components/LiveCard";
+
+const members = [
+	{ role: "Vo.", name: "森クリスタル", twitter: "ton69" },
+	{ role: "Dr.", name: "みやさきかく", twitter: "changachanga123" },
+	{ role: "Gt.", name: "yu-kai-han", twitter: "yu_kai_han" },
+	{ role: "Gt.", name: "つぎ", twitter: "tsugi_cockroach" },
+	{ role: "Gt. / Sax.", name: "鉄馬", twitter: "tetsumake" },
+	{ role: "Support Ba.", name: "NORITASO", twitter: "noname12ge" },
+	{ role: "Gt.", name: "かしわもち", twitter: "kashiwamo103" },
+	{ role: "Web / (時々)Gt.", name: "ウゑニシケイタ", twitter: "KMottmoti" },
+];
 
 export default function Home() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
-    </div>
-  );
+	const nextLive = getNextLive();
+
+	return (
+		<main className="page-content">
+			{/* ヒーローセクション */}
+			<section className="relative overflow-hidden">
+				{/* 背景パターン */}
+				<div className="absolute inset-0 opacity-5 pattern-dots" />
+
+				{/* メインビジュアル */}
+				<div className="relative px-6 pt-12 pb-8">
+					{/* バンド名 */}
+					<div className="text-center mb-8 animate-bounce-in">
+						<div className="inline-block bg-(--color-dark) text-secondary px-4 py-1.5 rounded text-sm font-bold mb-3 tracking-wider">
+							？？人編成ロックバンド
+						</div>
+						<h1 className="text-4xl font-black tracking-tight mb-2">
+							らくだのこぶ
+							<span className="text-primary ml-1">X</span>
+						</h1>
+						<p className="text-sm text-(--muted) font-medium tracking-widest">
+							- RAKUDA NO KOBU CROSS -
+						</p>
+					</div>
+
+					{/* キャッチコピー */}
+					<div className="card-pop mb-6 animate-bounce-in delay-100 opacity-0">
+						<p className="text-center font-bold text-lg leading-relaxed">
+							<span className="text-accent">「</span>
+							このジャンルで
+							<br />
+							こんなにギターいらんやろ
+							<span className="text-accent">」</span>
+						</p>
+						<p className="text-center text-sm text-(--muted) mt-2">
+							のバンドです。
+						</p>
+					</div>
+
+					{/* SNSリンク */}
+					<div className="flex justify-center gap-4 mb-8 animate-bounce-in delay-200 opacity-0">
+						<a
+							href="https://x.com/rakuda_no_kobu"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="w-12 h-12 rounded-xl flex items-center justify-center bg-secondary text-secondary shadow-md border-2 border-(--color-dark) hover:scale-110 transition-transform"
+						>
+							<span className="sr-only">X (Twitter)</span>
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+								<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
+							</svg>
+						</a>
+						<a
+							href="https://www.youtube.com/channel/UC-OKAbrcAqrRYuLvuiMt6oQ"
+							target="_blank"
+							rel="noopener noreferrer"
+							className="w-12 h-12 rounded-xl flex items-center justify-center bg-accent/90 text-secondary shadow-md border-2 border-accent hover:scale-110 transition-transform"
+						>
+							<span className="sr-only">YouTube</span>
+							<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+								<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
+							</svg>
+						</a>
+					</div>
+				</div>
+			</section>
+
+			{/* プロフィールセクション */}
+			<section className="section">
+				<h2 className="section-title title-pop">Profile</h2>
+
+				<div className="space-y-4">
+					<div className="card-pop">
+						<p className="text-sm leading-relaxed">
+							大阪を拠点に活動する<span className="font-bold text-primary">何人編成か分かりづらい</span>ロックバンド。
+							<br />
+							「KITA WHEEL 2025」や、「こぶフェス」「あのフェス」など大阪でいろいろなイベントを主催したりしています。
+						</p>
+					</div>
+				</div>
+			</section>
+
+			{/* メンバーセクション */}
+			<section className="section bg-secondary/50">
+				<h2 className="section-title title-pop">Members</h2>
+
+				<div className="grid grid-cols-2 gap-3">
+					{members.map((member, index) => (
+						<a
+							key={member.name}
+							href={`https://x.com/${member.twitter}`}
+							target="_blank"
+							rel="noopener noreferrer"
+							className="card-pop animate-bounce-in opacity-0"
+							style={{ animationDelay: `${(index + 1) * 100}ms` }}
+						>
+							<div className="member-badge mb-2">{member.role}</div>
+							<p className="font-bold text-sm">{member.name}</p>
+							<p className="text-xs text-(--muted)">@{member.twitter}</p>
+						</a>
+					))}
+				</div>
+
+				<p className="text-center text-sm text-(--muted) mt-4">
+					+ ほか何人かのメンバー
+				</p>
+			</section>
+
+			{/* 次回ライブ情報 */}
+			{nextLive && (
+				<section className="section">
+					<h2 className="section-title title-pop">Next Live</h2>
+
+					<LiveCard
+						frontmatter={nextLive.frontmatter}
+						variant="dark"
+					/>
+				</section>
+			)}
+
+			{/* フッター */}
+			<footer className="section text-center pb-8">
+				<p className="text-xs text-(--muted)">
+					© 2025 らくだのこぶX All Rights Reserved.
+				</p>
+			</footer>
+		</main>
+	);
 }

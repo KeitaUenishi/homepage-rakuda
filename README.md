@@ -1,36 +1,106 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# homepage-rakuda
 
-## Getting Started
+Next.js 16 + Tailwind CSS 4 によるホームページプロジェクト。
 
-First, run the development server:
+## 技術スタック
+
+- **Framework**: Next.js 16.1.4 (App Router)
+- **Styling**: Tailwind CSS 4
+- **Linter/Formatter**: Biome
+- **Content**: MDX + gray-matter
+- **Language**: TypeScript 5
+
+## セットアップ
 
 ```bash
+npm install
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## スクリプト
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| コマンド | 説明 |
+|----------|------|
+| `npm run dev` | 開発サーバー起動 (Turbopack) |
+| `npm run build` | プロダクションビルド |
+| `npm run start` | プロダクションサーバー起動 |
+| `npm run lint` | Biome lint実行 |
+| `npm run format` | Biome format実行 |
+| `npm run check` | Biome lint + format チェック |
+| `npm run check:fix` | Biome lint + format 自動修正 |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+## ディレクトリ構造
 
-## Learn More
+```
+homepage-rakuda/
+├── content/           # MDXコンテンツ
+│   ├── news/          # ニュース記事
+│   ├── live/          # ライブ情報
+│   └── release/       # リリース情報
+├── src/
+│   ├── app/           # Next.js App Router
+│   ├── lib/           # ユーティリティ
+│   │   ├── mdx.ts     # MDXファイル読み込み
+│   │   ├── data.ts    # データアクセス層（抽象化）
+│   │   └── db/        # 将来のDB接続用
+│   │       ├── index.ts
+│   │       └── schema.ts
+│   └── types/         # 型定義
+│       └── content.ts
+├── biome.json         # Biome設定
+└── package.json
+```
 
-To learn more about Next.js, take a look at the following resources:
+## コンテンツの追加
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+`content/{category}/YYYY-MM-DD-{slug}.mdx` の形式でファイルを作成：
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+```mdx
+---
+title: "記事タイトル"
+date: "2026-01-22"
+tags: ["タグ1", "タグ2"]
+status: "published"
+---
 
-## Deploy on Vercel
+本文をここに記述
+```
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## 将来のD1/Drizzle移行について
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+### 移行手順
+
+1. **依存関係のインストール**
+   ```bash
+   npm install drizzle-orm @cloudflare/workers-types
+   npm install -D drizzle-kit
+   ```
+
+2. **Wrangler設定**
+   ```bash
+   npx wrangler d1 create homepage-rakuda-db
+   ```
+   `wrangler.toml` を作成してD1バインディングを設定。
+
+3. **スキーマ定義**
+   `src/lib/db/schema.ts` のコメントを解除してスキーマを有効化。
+
+4. **マイグレーション**
+   ```bash
+   npx drizzle-kit generate:sqlite
+   npx wrangler d1 migrations apply homepage-rakuda-db
+   ```
+
+5. **データアクセス層の切り替え**
+   `src/lib/data.ts` でD1からのデータ取得処理を実装。
+   `CURRENT_DATA_SOURCE` を `'d1'` に変更。
+
+### 設計方針
+
+- `src/types/content.ts` の型定義がスキーマのベース
+- `src/lib/data.ts` がデータアクセスの抽象化層
+- 使用側コードは `data.ts` 経由でアクセスすることで、データソース変更に対して透過的
+
+## ライセンス
+
+Private
