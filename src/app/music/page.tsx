@@ -11,7 +11,7 @@ const musicVideos = [
 		title: "みつはちゃん(MV)",
 		link: "https://youtu.be/87JPONNHrs4?si=klfwYq8b62vzvCpO",
 	},
-		{
+	{
 		id: 3,
 		title: "らくだのこぶXライブ動画　あのクロBIGCAT公演2022",
 		link: "https://youtu.be/NnRbw0Ck5S4?si=TzizmgK-qBioaPCf",
@@ -27,7 +27,7 @@ const playlists = [
 		link: "https://music.apple.com/jp/artist/%E3%82%89%E3%81%8F%E3%81%A0%E3%81%AE%E3%81%93%E3%81%B6x/1527717402",
 		color: "bg-white",
 	},
-		{
+	{
 		id: 2,
 		name: "らくだのこぶX - All Songs",
 		platform: "Spotify",
@@ -39,7 +39,8 @@ const playlists = [
 
 // YouTubeのリンクから動画IDを抽出する関数
 function getYouTubeId(url: string): string {
-	const regex = /(?:youtube\.com\/(?:[^\/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?\/\s]{11})/i;
+	const regex =
+		/(?:youtube\.com\/(?:[^/]+\/.+\/|(?:v|e(?:mbed)?)\/|.*[?&]v=)|youtu\.be\/)([^"&?/\s]{11})/i;
 	const match = url.match(regex);
 	return match ? match[1] : "";
 }
@@ -54,9 +55,7 @@ export default function MusicPage() {
 					<h1 className="text-4xl font-black mb-2 animate-bounce-in tracking-tight">
 						Music<span className="text-primary">.</span>
 					</h1>
-					<p className="text-(--muted) text-sm tracking-wide">
-						音楽・映像コンテンツ
-					</p>
+					<p className="text-(--muted) text-sm tracking-wide">音楽・映像コンテンツ</p>
 				</div>
 			</section>
 
@@ -150,7 +149,13 @@ export default function MusicPage() {
 				<div className="card-gradient bg-accent text-secondary">
 					<div className="flex items-center gap-4 mb-4">
 						<div className="w-14 h-14 bg-secondary rounded-lg flex items-center justify-center">
-							<svg width="32" height="32" viewBox="0 0 24 24" fill="var(--color-accent)" aria-hidden="true">
+							<svg
+								width="32"
+								height="32"
+								viewBox="0 0 24 24"
+								fill="var(--color-accent)"
+								aria-hidden="true"
+							>
 								<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
 							</svg>
 						</div>

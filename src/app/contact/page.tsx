@@ -39,9 +39,7 @@ export default function ContactPage() {
 					<h1 className="text-4xl font-black mb-2 animate-bounce-in tracking-tight">
 						Contact<span className="text-primary">.</span>
 					</h1>
-					<p className="text-(--muted) text-sm tracking-wide">
-						お問い合わせ
-					</p>
+					<p className="text-(--muted) text-sm tracking-wide">お問い合わせ</p>
 				</div>
 			</section>
 
@@ -100,18 +98,14 @@ export default function ContactPage() {
 								</div>
 								<div>
 									<h3 className="font-bold">{method.name}</h3>
-									<p className="text-sm text-(--muted)">
-										{method.description}
-									</p>
+									<p className="text-sm text-(--muted)">{method.description}</p>
 								</div>
 							</div>
 							<a
 								href={method.link}
 								target="_blank"
 								rel="noopener noreferrer"
-								className={`btn-pop w-full ${
-									method.isMain ? "btn-primary" : "btn-secondary"
-								}`}
+								className={`btn-pop w-full ${method.isMain ? "btn-primary" : "btn-secondary"}`}
 							>
 								{method.buttonText}
 							</a>
@@ -132,8 +126,7 @@ export default function ContactPage() {
 						</div>
 					</div>
 					<p className="text-sm text-(--muted) mb-4">
-						イベントへの出演依頼やコラボレーションのご相談は、
-						X(Twitter)のDMまでお願いします。
+						イベントへの出演依頼やコラボレーションのご相談は、 X(Twitter)のDMまでお願いします。
 					</p>
 					<a
 						href="https://x.com/rakuda_no_kobu"

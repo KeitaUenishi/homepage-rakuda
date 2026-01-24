@@ -11,13 +11,13 @@ const zenMaruGothic = Zen_Maru_Gothic({
 });
 
 export const metadata: Metadata = {
-	title: "らくだのこぶX | ポップロックバンド",
+	title: "らくだのこぶX | 何人編成か分かりづらいバンド",
 	description:
-		"このジャンルでこんなギターいらんやろ、のバンドです。8人編成の大阪発ポップロックバンド「らくだのこぶX」公式サイト",
+		"このジャンルでこんなにギターいらんやろ、のバンドです。8人編成の大阪発ロックバンド「らくだのこぶX」公式サイト",
 	keywords: ["らくだのこぶX", "ロックバンド", "大阪", "ライブ", "8人編成"],
 	openGraph: {
-		title: "らくだのこぶX | ポップロックバンド",
-		description: "このジャンルでこんなギターいらんやろ、の8人編成バンド",
+		title: "らくだのこぶX | 何人編成か分かりづらいバンド",
+		description: "このジャンルでこんなにギターいらんやろ、のバンド",
 		type: "website",
 		locale: "ja_JP",
 	},

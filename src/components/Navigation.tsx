@@ -120,9 +120,7 @@ export default function Navigation() {
 							<Link
 								href={item.href}
 								className={`flex flex-col items-center gap-1 px-3 py-2 rounded-xl transition-all duration-300 ${
-									isActive
-										? "text-primary scale-110"
-										: "text-(--muted) hover:text-foreground"
+									isActive ? "text-primary scale-110" : "text-(--muted) hover:text-foreground"
 								}`}
 							>
 								<span
@@ -143,4 +141,3 @@ export default function Navigation() {
 		</nav>
 	);
 }
-

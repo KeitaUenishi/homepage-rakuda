@@ -1,5 +1,6 @@
-import { getNextLive } from "@/lib/mdx";
+import Image from "next/image";
 import LiveCard from "@/components/LiveCard";
+import { getNextLive } from "@/lib/mdx";
 
 const members = [
 	{ role: "Vo.", name: "森クリスタル", twitter: "ton69" },
@@ -47,9 +48,7 @@ export default function Home() {
 							こんなにギターいらんやろ
 							<span className="text-accent">」</span>
 						</p>
-						<p className="text-center text-sm text-(--muted) mt-2">
-							のバンドです。
-						</p>
+						<p className="text-center text-sm text-(--muted) mt-2">のバンドです。</p>
 					</div>
 
 					{/* SNSリンク */}
@@ -61,7 +60,13 @@ export default function Home() {
 							className="w-12 h-12 rounded-xl flex items-center justify-center bg-secondary text-secondary shadow-md border-2 border-(--color-dark) hover:scale-110 transition-transform"
 						>
 							<span className="sr-only">X (Twitter)</span>
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+							<svg
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+								aria-hidden="true"
+							>
 								<path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z" />
 							</svg>
 						</a>
@@ -72,7 +77,13 @@ export default function Home() {
 							className="w-12 h-12 rounded-xl flex items-center justify-center bg-accent/90 text-secondary shadow-md border-2 border-accent hover:scale-110 transition-transform"
 						>
 							<span className="sr-only">YouTube</span>
-							<svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+							<svg
+								width="24"
+								height="24"
+								viewBox="0 0 24 24"
+								fill="currentColor"
+								aria-hidden="true"
+							>
 								<path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z" />
 							</svg>
 						</a>
@@ -83,13 +94,27 @@ export default function Home() {
 			{/* プロフィールセクション */}
 			<section className="section">
 				<h2 className="section-title title-pop">Profile</h2>
+				{/* プロフィール画像 */}
+				<div className="mb-8 animate-bounce-in delay-75 opacity-0">
+					<div className="relative aspect-4/3 rounded-2xl overflow-hidden shadow-xl border-4 border-secondary">
+						<Image
+							src="/rakudanokobu-x-profile.jpg"
+							alt="らくだのこぶX アーティスト写真"
+							fill
+							className="object-cover"
+							priority
+						/>
+					</div>
+				</div>
 
 				<div className="space-y-4">
 					<div className="card-pop">
 						<p className="text-sm leading-relaxed">
-							大阪を拠点に活動する<span className="font-bold text-primary">何人編成か分かりづらい</span>ロックバンド。
+							大阪を拠点に活動する
+							<span className="font-bold text-primary">何人編成か分かりづらい</span>ロックバンド。
 							<br />
-							「KITA WHEEL 2025」や、「こぶフェス」「あのフェス」など大阪でいろいろなイベントを主催したりしています。
+							「KITA WHEEL
+							2025」や、「こぶフェス」「あのフェス」など大阪でいろいろなイベントを主催したりしています。
 						</p>
 					</div>
 				</div>
@@ -116,9 +141,7 @@ export default function Home() {
 					))}
 				</div>
 
-				<p className="text-center text-sm text-(--muted) mt-4">
-					+ ほか何人かのメンバー
-				</p>
+				<p className="text-center text-sm text-(--muted) mt-4">+ ほか何人かのメンバー</p>
 			</section>
 
 			{/* 次回ライブ情報 */}
@@ -126,18 +149,13 @@ export default function Home() {
 				<section className="section">
 					<h2 className="section-title title-pop">Next Live</h2>
 
-					<LiveCard
-						frontmatter={nextLive.frontmatter}
-						variant="dark"
-					/>
+					<LiveCard frontmatter={nextLive.frontmatter} variant="dark" />
 				</section>
 			)}
 
 			{/* フッター */}
 			<footer className="section text-center pb-8">
-				<p className="text-xs text-(--muted)">
-					© 2025 らくだのこぶX All Rights Reserved.
-				</p>
+				<p className="text-xs text-(--muted)">© 2025 らくだのこぶX All Rights Reserved.</p>
 			</footer>
 		</main>
 	);

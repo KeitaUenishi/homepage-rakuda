@@ -1,5 +1,5 @@
-import { getUpcomingLives, getPickupLives } from "@/lib/mdx";
 import LiveCard from "@/components/LiveCard";
+import { getPickupLives, getUpcomingLives } from "@/lib/mdx";
 
 export default function LivePage() {
 	const upcomingLives = getUpcomingLives(10);
@@ -63,9 +63,7 @@ export default function LivePage() {
 						<span className="text-3xl">🎫</span>
 						<div>
 							<p className="font-bold">X(Twitter) DMで受付中！</p>
-							<p className="text-sm text-(--muted)">
-								お気軽にお問い合わせください
-							</p>
+							<p className="text-sm text-(--muted)">お気軽にお問い合わせください</p>
 						</div>
 					</div>
 

@@ -63,12 +63,8 @@ export default function LiveCard({
 		>
 			{/* 日付表示 */}
 			<div className="flex items-baseline gap-3 mb-2">
-				<span className="text-2xl font-black">
-					{formatDate(frontmatter.date)}
-				</span>
-				<span
-					className={`text-sm font-bold px-2 py-0.5 rounded ${weekdayBadgeClass}`}
-				>
+				<span className="text-2xl font-black">{formatDate(frontmatter.date)}</span>
+				<span className={`text-sm font-bold px-2 py-0.5 rounded ${weekdayBadgeClass}`}>
 					{getWeekday(frontmatter.date)}
 				</span>
 			</div>
@@ -78,16 +74,12 @@ export default function LiveCard({
 
 			{/* サブタイトル */}
 			{frontmatter.subTitle && (
-				<p className={`text-sm mb-3 ${subtitleClass}`}>
-					『{frontmatter.subTitle}』
-				</p>
+				<p className={`text-sm mb-3 ${subtitleClass}`}>『{frontmatter.subTitle}』</p>
 			)}
 
 			{/* 出演者 */}
 			{frontmatter.act && frontmatter.act.length > 0 && (
-				<p className={`text-sm mb-3 ${subtitleClass}`}>
-					🎤 {frontmatter.act.join(" / ")}
-				</p>
+				<p className={`text-sm mb-3 ${subtitleClass}`}>🎤 {frontmatter.act.join(" / ")}</p>
 			)}
 
 			{/* 詳細情報 */}

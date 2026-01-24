@@ -6,10 +6,11 @@ export default function NotFound() {
 			<div className="animate-bounce-in">
 				<div className="text-8xl font-black text-primary mb-4">404</div>
 				<h1 className="text-2xl font-black mb-6">Page Not Found</h1>
-				
+
 				<div className="card-pop mb-8 max-w-sm mx-auto">
 					<p className="text-sm text-(--muted) leading-relaxed">
-						お探しのページは見つかりませんでした。<br />
+						お探しのページは見つかりませんでした。
+						<br />
 						移動または削除された可能性があります。
 					</p>
 				</div>
@@ -25,4 +26,3 @@ export default function NotFound() {
 		</main>
 	);
 }
-

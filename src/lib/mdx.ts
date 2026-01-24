@@ -6,7 +6,14 @@
 import fs from "node:fs";
 import path from "node:path";
 import matter from "gray-matter";
-import type { Category, ContentFrontmatter, ContentItem, ContentListItem, LiveFrontmatter, LiveItem } from "@/types/content";
+import type {
+	Category,
+	ContentFrontmatter,
+	ContentItem,
+	ContentListItem,
+	LiveFrontmatter,
+	LiveItem,
+} from "@/types/content";
 
 // コンテンツディレクトリのパス
 const CONTENT_DIR = path.join(process.cwd(), "content");
@@ -252,8 +259,7 @@ export function getNextLive(): LiveItem | null {
 	const upcomingLives = getUpcomingLives();
 	if (upcomingLives.length === 0) return null;
 	// 日付昇順でソートして最初の要素を返す
-	return upcomingLives.sort((a, b) =>
-		a.frontmatter.date.localeCompare(b.frontmatter.date)
-	)[0];
+	return upcomingLives.sort((a, b) => a.frontmatter.date.localeCompare(b.frontmatter.date))[0];
 }
+
 
