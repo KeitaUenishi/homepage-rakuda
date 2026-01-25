@@ -1,0 +1,24 @@
+name = "line-webhook"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+[vars]
+GH_OWNER = "KeitaUenishi"
+GH_REPO = "homepage-rakuda"
+GH_BRANCH = "main"
+GH_COMMITTER_NAME = "line-worker"
+GH_COMMITTER_EMAIL = "keita.uenishi@gmail.com"
+
+# 以下の環境変数は wrangler secret put で設定します（ここには記載しない）
+# GH_TOKEN = "zzzzzz"
+# LINE_CHANNEL_SECRET = "xxxx"
+# ADMIN_USER_IDS = "yyyy"
+
+[[kv_namespaces]]
+binding = "KV"
+id = "9f7a4217e9244cd989ffc2f34421e539"
+
+[observability]
+enabled = true
+
+
