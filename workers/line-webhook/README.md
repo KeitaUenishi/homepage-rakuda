@@ -23,6 +23,7 @@ npx wrangler kv:namespace create PROCESSED_EVENTS
 以下の秘密情報を設定します。
 ```bash
 npx wrangler secret put LINE_CHANNEL_SECRET
+npx wrangler secret put LINE_CHANNEL_ACCESS_TOKEN
 npx wrangler secret put GH_TOKEN
 npx wrangler secret put ADMIN_USER_IDS
 npx wrangler secret put GH_OWNER
@@ -33,6 +34,7 @@ npx wrangler secret put GH_BRANCH
 | 変数名 | 説明 |
 | :--- | :--- |
 | `LINE_CHANNEL_SECRET` | LINE Developers の Channel Secret |
+| `LINE_CHANNEL_ACCESS_TOKEN` | LINE Developers の チャネルアクセストークン |
 | `GH_TOKEN` | GitHub の Personal Access Token (repo スコープが必要) |
 | `ADMIN_USER_IDS` | 投稿を許可するLINEユーザーID (カンマ区切り) |
 | `GH_OWNER` | GitHub リポジトリの所有者名 |

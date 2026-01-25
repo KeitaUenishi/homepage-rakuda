@@ -1,5 +1,8 @@
+/// <reference types="@cloudflare/workers-types" />
+
 export interface Env {
   LINE_CHANNEL_SECRET: string;
+  LINE_CHANNEL_ACCESS_TOKEN: string;
   ADMIN_USER_IDS: string;
   GH_TOKEN: string;
   GH_OWNER: string;
@@ -19,6 +22,7 @@ interface LineWebhookEvent {
     userId: string;
   };
   webhookEventId: string;
+  replyToken?: string;
   deliveryContext: {
     isRedelivery: boolean;
   };
@@ -102,7 +106,12 @@ export default {
         // 7. GitHub APIでコミット
         const commitResult = await commitToGitHub(filePath, mdxContent, `live: ${liveData.title}`, env);
 
-        // 8. 成功時、KVに記録
+        // 8. LINEに返信
+        if (event.replyToken) {
+          await replyToLine(event.replyToken, `✅ ライブ情報を登録しました！\n\nタイトル: ${liveData.title}\n日付: ${liveData.date}\n会場: ${liveData.venue}\nURL: https://github.com/${env.GH_OWNER}/${env.GH_REPO}/blob/${env.GH_BRANCH}/${filePath}`, env);
+        }
+
+        // 9. 成功時、KVに記録
         await env.KV.put(idempotencyKey, "true", { expirationTtl: 86400 }); // 24h
         await env.KV.put(rateLimitKey, now.toString(), { expirationTtl: 60 });
 
@@ -328,6 +337,34 @@ async function commitToGitHub(path: string, content: string, message: string, en
   }
 
   return await putResp.json() as any;
+}
+
+/**
+ * LINEに返信を送信
+ */
+async function replyToLine(replyToken: string, text: string, env: Env) {
+  const url = "https://api.line.me/v2/bot/message/reply";
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}`
+    },
+    body: JSON.stringify({
+      replyToken,
+      messages: [
+        {
+          type: "text",
+          text
+        }
+      ]
+    })
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    console.error(`LINE Reply Error: ${res.status} ${errorText}`);
+  }
 }
 
 

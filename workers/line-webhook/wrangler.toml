@@ -12,6 +12,7 @@ GH_COMMITTER_EMAIL = "keita.uenishi@gmail.com"
 # 以下の環境変数は wrangler secret put で設定します（ここには記載しない）
 # GH_TOKEN = "zzzzzz"
 # LINE_CHANNEL_SECRET = "xxxx"
+# LINE_CHANNEL_ACCESS_TOKEN = "xxxx"
 # ADMIN_USER_IDS = "yyyy"
 
 [[kv_namespaces]]
