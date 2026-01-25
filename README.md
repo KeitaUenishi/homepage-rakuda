@@ -53,6 +53,7 @@ homepage-rakuda/
 
 ## コンテンツの追加
 
+### 1. 手動追加
 `content/{category}/YYYY-MM-DD-{slug}.mdx` の形式でファイルを作成：
 
 ```mdx
@@ -65,6 +66,11 @@ status: "published"
 
 本文をここに記述
 ```
+
+### 2. LINEからの自動追加（ライブ情報のみ）
+LINE公式アカウントから特定のテンプレートでメッセージを送信することで、自動的に `content/live/` にMDXファイルが生成・コミットされます。
+
+詳細は `workers/line-webhook/README.md` を参照してください。
 
 ## 将来のD1/Drizzle移行について
 
