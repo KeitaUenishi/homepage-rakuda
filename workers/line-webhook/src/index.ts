@@ -157,6 +157,7 @@ function parseLiveTemplate(text: string) {
     startTime: "",
     price: "",
     subTitle: "",
+    pickup: false,
     act: []
   };
 
@@ -179,7 +180,11 @@ function parseLiveTemplate(text: string) {
       const key = line.slice(0, colonIndex).trim();
       const value = line.slice(colonIndex + 1).trim();
       if (key in data) {
-        data[key] = value;
+        if (key === "pickup") {
+          data[key] = value.toLowerCase() === "true";
+        } else {
+          data[key] = value;
+        }
         currentKey = key;
       }
     }
@@ -216,6 +221,7 @@ function generateLiveMDX(data: any): string {
   mdx += `openTime: "${data.openTime}"\n`;
   mdx += `startTime: "${data.startTime}"\n`;
   mdx += `price: "${escape(data.price)}"\n`;
+  mdx += `pickup: ${data.pickup}\n`;
   mdx += `act:\n`;
   if (data.act && data.act.length > 0) {
     for (const a of data.act) {
