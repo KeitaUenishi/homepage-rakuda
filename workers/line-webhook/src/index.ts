@@ -186,7 +186,13 @@ export default {
             "",
             `登録ファイルのURL: https://github.com/${env.GH_OWNER}/${env.GH_REPO}/blob/${env.GH_BRANCH}/${encodedPath}`,
             "",
-            "※登録情報を削除する場合は上記のIDを指定してください。"
+            `プレビュー中のサイトURL: https://preview.homepage-rakuda.pages.dev`,
+            "",
+            "※現在はpreview環境に反映中です。本番環境への反映は「#release」コマンドを送信すると実行されます。",
+            "※登録した情報を削除する場合は記載されているIDを指定して、以下のメッセージを送信してください。",
+            "",
+            "#delete",
+            `id: ${liveData.id}`
           ].join("\n");
           
           await replyToLine(event.replyToken, replyMessage, env);
@@ -621,7 +627,7 @@ async function replyToLine(replyToken: string, text: string, env: Env) {
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error(`LINE Reply Error: ${res.status} ${errorText}`);
+    console.error(`LINE Reply Error: status=${res.status}, body=${errorText}, token=${env.LINE_CHANNEL_ACCESS_TOKEN.substring(0, 10)}...`);
   }
 }
 
