@@ -52,7 +52,7 @@ export default {
     }
 
     const payload: { events: LineWebhookEvent[] } = JSON.parse(body);
-    const results = [];
+    const results: any[] = [];
 
     for (const event of payload.events) {
       // 2. テキストメッセージ以外は無視
