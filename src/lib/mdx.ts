@@ -262,6 +262,3 @@ export function getNextLive(): LiveItem | null {
 	// 日付昇順でソートして最初の要素を返す
 	return upcomingLives.sort((a, b) => a.frontmatter.date.localeCompare(b.frontmatter.date))[0];
 }
-
-
-

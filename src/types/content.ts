@@ -84,6 +84,3 @@ export interface ContentListItem {
  * - image_path: text
  * - order: integer
  */
-
-
-

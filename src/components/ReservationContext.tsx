@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, type ReactNode } from "react";
+import { createContext, type ReactNode, useContext, useState } from "react";
 
 import type { LiveFrontmatter } from "@/types/content";
 import ReservationModal from "./ReservationModal";
@@ -27,11 +27,7 @@ export function ReservationProvider({ children }: { children: ReactNode }) {
 		<ReservationContext.Provider value={{ openReservation, closeReservation }}>
 			{children}
 			{activeLive && (
-				<ReservationModal
-					live={activeLive}
-					isOpen={!!activeLive}
-					onClose={closeReservation}
-				/>
+				<ReservationModal live={activeLive} isOpen={!!activeLive} onClose={closeReservation} />
 			)}
 		</ReservationContext.Provider>
 	);
@@ -44,4 +40,3 @@ export function useReservation() {
 	}
 	return context;
 }
-

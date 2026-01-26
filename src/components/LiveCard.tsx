@@ -93,7 +93,6 @@ export default function LiveCard({
 
 			{/* ボタンエリア */}
 			<div className="flex flex-col gap-2 mt-4">
-				
 				<LiveCardButtons frontmatter={frontmatter} buttonClass={buttonClass} />
 			</div>
 		</div>

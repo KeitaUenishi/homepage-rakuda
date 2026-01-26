@@ -71,7 +71,8 @@ export default function ReservationModal({ live, isOpen, onClose }: ReservationM
 							<div className="text-5xl mb-4">✅</div>
 							<h3 className="text-xl font-black mb-2">送信完了しました！</h3>
 							<p className="text-(--muted) mb-6">
-								ご予約ありがとうございます。<br />
+								ご予約ありがとうございます。
+								<br />
 								当日会場受付にてお名前をお伝えください。
 							</p>
 							<button
@@ -85,7 +86,9 @@ export default function ReservationModal({ live, isOpen, onClose }: ReservationM
 					) : (
 						<form onSubmit={handleSubmit} className="space-y-4">
 							<div>
-								<label htmlFor="name" className="block text-sm font-black mb-1">お名前</label>
+								<label htmlFor="name" className="block text-sm font-black mb-1">
+									お名前
+								</label>
 								<input
 									type="text"
 									id="name"
@@ -118,9 +121,7 @@ export default function ReservationModal({ live, isOpen, onClose }: ReservationM
 								</div>
 							</div>
 
-							{error && (
-								<p className="text-red-500 text-sm font-bold">{error}</p>
-							)}
+							{error && <p className="text-red-500 text-sm font-bold">{error}</p>}
 
 							<div className="flex gap-3 pt-4">
 								<button
@@ -145,4 +146,3 @@ export default function ReservationModal({ live, isOpen, onClose }: ReservationM
 		</div>
 	);
 }
-

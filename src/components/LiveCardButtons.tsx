@@ -33,4 +33,3 @@ export default function LiveCardButtons({ frontmatter, buttonClass }: LiveCardBu
 		</div>
 	);
 }
-
