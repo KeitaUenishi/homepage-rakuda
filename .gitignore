@@ -21,7 +21,8 @@
 /build
 
 # workers
-/workers
+/workers/line-webhook/node_modules
+/workers/line-webhook/.wrangler
 
 # misc
 .DS_Store
