@@ -135,6 +135,24 @@ export default {
           continue;
         }
 
+        if (text.startsWith("#release")) {
+          // リリース処理 (preview -> main マージ)
+          try {
+            await mergePreviewToMain(env);
+            
+            if (event.replyToken) {
+              await replyToLine(event.replyToken, "🚀 リリース（マージ）が完了しました！\n本番環境へのデプロイが開始されます。\n反映まで数分お待ちください。", env);
+            }
+            results.push({ eventId, status: "success", type: "release" });
+          } catch (err: any) {
+            if (event.replyToken) {
+              await replyToLine(event.replyToken, `❌ リリースに失敗しました。\n原因: ${err.message}`, env);
+            }
+            throw err;
+          }
+          continue;
+        }
+
         if (!text.startsWith("#live")) {
           // #news 等は 400 エラー
           if (text.startsWith("#")) {
@@ -528,6 +546,55 @@ async function findFilePathByIdInGitHub(targetId: string, env: Env): Promise<str
 
   // 最初にマッチしたファイルパスを返す
   return results.find(path => path !== null) || null;
+}
+
+/**
+ * GitHub APIで preview ブランチを main にマージ
+ */
+async function mergePreviewToMain(env: Env) {
+  const owner = env.GH_OWNER.trim();
+  const repo = env.GH_REPO.trim();
+  const token = env.GH_TOKEN.trim().replace(/^(token|Bearer)\s+/i, "");
+
+  const url = `https://api.github.com/repos/${owner}/${repo}/merges`;
+  
+  const headers = {
+    "Authorization": `token ${token}`,
+    "User-Agent": "Cloudflare-Worker",
+    "Content-Type": "application/json",
+    "Accept": "application/vnd.github.v3+json"
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      base: "main",
+      head: env.GH_BRANCH.trim(), // preview ブランチ (env.GH_BRANCH)
+      commit_message: "chore: manual release from LINE"
+    })
+  });
+
+  if (res.status === 204) {
+    // すでに最新（マージするものがない）
+    return { status: "already_up_to_date" };
+  }
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = errorText;
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.message || errorText;
+    } catch (e) {}
+    
+    if (res.status === 409) {
+      throw new Error("マージ競合が発生しました。GitHub上で解決してください。");
+    }
+    throw new Error(`GitHub Merge Error: ${res.status} ${errorMessage}`);
+  }
+
+  return await res.json();
 }
 
 /**

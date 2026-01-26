@@ -5,7 +5,7 @@ compatibility_date = "2024-01-01"
 [vars]
 GH_OWNER = "KeitaUenishi"
 GH_REPO = "homepage-rakuda"
-GH_BRANCH = "main"
+GH_BRANCH = "preview"
 GH_COMMITTER_NAME = "line-worker"
 GH_COMMITTER_EMAIL = "keita.uenishi@gmail.com"
 
