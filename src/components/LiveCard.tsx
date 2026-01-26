@@ -91,10 +91,22 @@ export default function LiveCard({
 				<p>🎫 {frontmatter.price}</p>
 			</div>
 
-			{/* 予約ボタン */}
-			<Link href="/contact" className={`${buttonClass} mt-4 w-full`}>
-				チケット予約
-			</Link>
+			{/* ボタンエリア */}
+			<div className="flex flex-col gap-2 mt-4">
+				{frontmatter.detailUrl && (
+					<a
+						href={frontmatter.detailUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						className={`${buttonClass} w-full text-center`}
+					>
+						詳細
+					</a>
+				)}
+				<Link href="/contact" className={`${buttonClass} w-full text-center`}>
+					チケット予約
+				</Link>
+			</div>
 		</div>
 	);
 }

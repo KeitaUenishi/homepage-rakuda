@@ -30,6 +30,7 @@ export interface LiveFrontmatter {
 	startTime: string;
 	price: string;
 	pickup?: boolean;
+	detailUrl?: string;
 	act?: string[];
 }
 

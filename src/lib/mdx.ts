@@ -194,6 +194,7 @@ function parseLiveFile(filename: string): LiveItem | null {
 		startTime: data.startTime || "",
 		price: data.price || "",
 		pickup: data.pickup ?? false,
+		detailUrl: data.detailUrl,
 		act: data.act,
 	};
 

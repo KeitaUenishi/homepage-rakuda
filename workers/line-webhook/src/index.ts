@@ -273,6 +273,7 @@ function parseLiveTemplate(text: string) {
     startTime: "",
     price: "",
     subTitle: "",
+    detailUrl: "",
     pickup: false,
     act: []
   };
@@ -339,6 +340,9 @@ function generateLiveMDX(data: any): string {
   mdx += `startTime: "${data.startTime}"\n`;
   mdx += `price: "${escape(data.price)}"\n`;
   mdx += `pickup: ${data.pickup}\n`;
+  if (data.detailUrl) {
+    mdx += `detailUrl: "${escape(data.detailUrl)}"\n`;
+  }
   mdx += `act:\n`;
   if (data.act && data.act.length > 0) {
     for (const a of data.act) {
