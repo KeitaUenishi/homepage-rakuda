@@ -1,6 +1,7 @@
 import Image from "next/image";
 import LiveCard from "@/components/LiveCard";
 import { getNextLive } from "@/lib/mdx";
+import { ReservationProvider } from "@/components/ReservationContext";
 
 const members = [
 	{ role: "Vo.", name: "森クリスタル", twitter: "ton69" },
@@ -17,7 +18,8 @@ export default function Home() {
 	const nextLive = getNextLive();
 
 	return (
-		<main className="page-content">
+		<ReservationProvider>
+			<main className="page-content">
 			{/* ヒーローセクション */}
 			<section className="relative overflow-hidden">
 				{/* 背景パターン */}
@@ -158,5 +160,6 @@ export default function Home() {
 				<p className="text-xs text-(--muted)">© 2025 らくだのこぶX All Rights Reserved.</p>
 			</footer>
 		</main>
+		</ReservationProvider>
 	);
 }

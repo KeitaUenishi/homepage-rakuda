@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { LiveFrontmatter } from "@/types/content";
+import LiveCardButtons from "./LiveCardButtons";
 
 type LiveCardVariant = "default" | "highlight" | "dark";
 
@@ -93,19 +93,8 @@ export default function LiveCard({
 
 			{/* ボタンエリア */}
 			<div className="flex flex-col gap-2 mt-4">
-				{frontmatter.detailUrl && (
-					<a
-						href={frontmatter.detailUrl}
-						target="_blank"
-						rel="noopener noreferrer"
-						className={`${buttonClass} w-full text-center`}
-					>
-						詳細
-					</a>
-				)}
-				<Link href="/contact" className={`${buttonClass} w-full text-center`}>
-					チケット予約
-				</Link>
+				
+				<LiveCardButtons frontmatter={frontmatter} buttonClass={buttonClass} />
 			</div>
 		</div>
 	);

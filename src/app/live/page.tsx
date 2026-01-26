@@ -1,13 +1,15 @@
 import LiveCard from "@/components/LiveCard";
 import { getPickupLives, getUpcomingLives } from "@/lib/mdx";
+import { ReservationProvider } from "@/components/ReservationContext";
 
 export default function LivePage() {
 	const upcomingLives = getUpcomingLives(10);
 	const pickupLives = getPickupLives();
 
 	return (
-		<main className="page-content">
-			{/* ヘッダー */}
+		<ReservationProvider>
+			<main className="page-content">
+				{/* ヘッダー */}
 			<section className="relative overflow-hidden">
 				<div className="absolute inset-0 bg-(--color-dark) opacity-5" />
 				<div className="relative px-6 pt-12 pb-8">
@@ -78,5 +80,6 @@ export default function LivePage() {
 				</div>
 			</section>
 		</main>
+		</ReservationProvider>
 	);
 }
