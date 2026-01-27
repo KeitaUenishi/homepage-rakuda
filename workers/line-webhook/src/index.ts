@@ -707,7 +707,7 @@ async function sendEmailNotification(subject: string, text: string, env: Env) {
     },
     body: JSON.stringify({
       from: "Ticket System <onboarding@resend.dev>",
-      to: ["uenishikeita@gmail.com"],
+      to: ["k.mottimoti@gmail.com"],
       subject: subject,
       text: text,
     }),

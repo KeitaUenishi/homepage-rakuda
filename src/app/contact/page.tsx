@@ -43,40 +43,6 @@ export default function ContactPage() {
 				</div>
 			</section>
 
-			{/* チケット予約案内 */}
-			<section className="section">
-				<div className="card-gradient bg-(--color-dark) text-secondary">
-					<div className="flex items-center gap-3 mb-4">
-						<span className="text-4xl animate-float">🎫</span>
-						<div>
-							<h2 className="font-black text-xl">チケット予約</h2>
-							<p className="text-sm opacity-80">ライブチケットのお取り置き</p>
-						</div>
-					</div>
-					<p className="text-sm opacity-80 mb-4">
-						X(Twitter)のDMにて受け付けています！
-						<br />
-						お気軽にメッセージください。
-					</p>
-					<div className="bg-primary/20 rounded-lg p-4 mb-4">
-						<p className="text-sm font-bold mb-2">DMに記載いただきたい内容：</p>
-						<ul className="text-sm space-y-1 opacity-90">
-							<li>• ご希望のライブ日程</li>
-							<li>• お名前（フルネーム）</li>
-							<li>• 枚数</li>
-						</ul>
-					</div>
-					<a
-						href="https://x.com/rakuda_no_kobu"
-						target="_blank"
-						rel="noopener noreferrer"
-						className="btn-pop bg-primary text-(--color-dark) border-primary w-full"
-					>
-						予約のDMを送る
-					</a>
-				</div>
-			</section>
-
 			{/* 連絡方法 */}
 			<section className="section">
 				<h2 className="section-title title-pop">SNS</h2>

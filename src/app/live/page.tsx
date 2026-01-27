@@ -64,7 +64,7 @@ export default function LivePage() {
 						<div className="flex items-center gap-3 mb-4">
 							<span className="text-3xl">🎫</span>
 							<div>
-								<p className="font-bold">X(Twitter) DMで受付中！</p>
+								<p className="font-bold">X(Twitter) DMでも予約受付中！</p>
 								<p className="text-sm text-(--muted)">お気軽にお問い合わせください</p>
 							</div>
 						</div>
