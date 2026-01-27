@@ -10,6 +10,7 @@ export interface Env {
   GH_BRANCH: string;
   GH_COMMITTER_NAME?: string;
   GH_COMMITTER_EMAIL?: string;
+  RESEND_API_KEY: string;
   KV: KVNamespace;
 }
 
@@ -35,10 +36,29 @@ interface LineWebhookEvent {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+
+    // CORS preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      });
+    }
+
     if (request.method !== "POST") {
       return new Response("Method Not Allowed", { status: 405 });
     }
 
+    // パスによる分岐
+    if (url.pathname === "/api/reservation") {
+      return handleReservation(request, env);
+    }
+
+    // 以降は LINE Webhook 処理
     const signature = request.headers.get("X-Line-Signature");
     if (!signature) {
       return new Response("Missing Signature", { status: 401 });
@@ -632,6 +652,70 @@ async function replyToLine(replyToken: string, text: string, env: Env) {
   if (!res.ok) {
     const errorText = await res.text();
     console.error(`LINE Reply Error: status=${res.status}, body=${errorText}, token=${env.LINE_CHANNEL_ACCESS_TOKEN.substring(0, 10)}...`);
+  }
+}
+
+/**
+ * 予約情報を メール に通知
+ */
+async function handleReservation(request: Request, env: Env): Promise<Response> {
+  try {
+    const { name, count, liveTitle, liveDate } = await request.json() as any;
+
+    if (!name || !count || !liveTitle || !liveDate) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    const messageText = [
+      "🎫 【チケット予約が入りました】",
+      "",
+      `公演: ${liveTitle}`,
+      `日程: ${liveDate}`,
+      `名前: ${name} 様`,
+      `枚数: ${count} 枚`,
+      "",
+      "---",
+      "このメールはシステムより自動送信されています。"
+    ].join("\n");
+
+    await sendEmailNotification(`【チケット予約】${liveTitle} - ${name}様`, messageText, env);
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
+/**
+ * メール通知を送信 (Resendを使用)
+ */
+async function sendEmailNotification(subject: string, text: string, env: Env) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({
+      from: "Ticket System <onboarding@resend.dev>",
+      to: ["uenishikeita@gmail.com"],
+      subject: subject,
+      text: text,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Resend API Error: ${res.status} ${errorText}`);
   }
 }
 

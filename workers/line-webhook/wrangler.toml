@@ -14,6 +14,7 @@ GH_COMMITTER_EMAIL = "keita.uenishi@gmail.com"
 # LINE_CHANNEL_SECRET = "xxxx"
 # LINE_CHANNEL_ACCESS_TOKEN = "xxxx"
 # ADMIN_USER_IDS = "yyyy"
+# RESEND_API_KEY = "uuu"
 
 [[kv_namespaces]]
 binding = "KV"
