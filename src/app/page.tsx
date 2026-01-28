@@ -11,6 +11,7 @@ const members = [
 	{ role: "Gt. / Sax.", name: "鉄馬", twitter: "tetsumake" },
 	{ role: "Support Ba.", name: "NORITASO", twitter: "noname12ge" },
 	{ role: "Gt.", name: "かしわもち", twitter: "kashiwamo103" },
+	{ role: "Key.", name: "エイティン" },
 	{ role: "Web / (時々)Gt.", name: "ウゑニシケイタ", twitter: "KMottmoti" },
 ];
 
@@ -127,20 +128,35 @@ export default function Home() {
 					<h2 className="section-title title-pop">Members</h2>
 
 					<div className="grid grid-cols-2 gap-3">
-						{members.map((member, index) => (
-							<a
-								key={member.name}
-								href={`https://x.com/${member.twitter}`}
-								target="_blank"
-								rel="noopener noreferrer"
-								className="card-pop animate-bounce-in opacity-0"
-								style={{ animationDelay: `${(index + 1) * 100}ms` }}
-							>
-								<div className="member-badge mb-2">{member.role}</div>
-								<p className="font-bold text-sm">{member.name}</p>
-								<p className="text-xs text-(--muted)">@{member.twitter}</p>
-							</a>
-						))}
+						{members.map((member, index) => {
+							const content = (
+								<>
+									<div className="member-badge mb-2">{member.role}</div>
+									<p className="font-bold text-sm">{member.name}</p>
+									{member.twitter && <p className="text-xs text-(--muted)">@{member.twitter}</p>}
+								</>
+							);
+							const commonProps = {
+								className: "card-pop animate-bounce-in opacity-0",
+								style: { animationDelay: `${(index + 1) * 100}ms` },
+							};
+
+							return member.twitter ? (
+								<a
+									key={member.name}
+									href={`https://x.com/${member.twitter}`}
+									target="_blank"
+									rel="noopener noreferrer"
+									{...commonProps}
+								>
+									{content}
+								</a>
+							) : (
+								<div key={member.name} {...commonProps}>
+									{content}
+								</div>
+							);
+						})}
 					</div>
 
 					<p className="text-center text-sm text-(--muted) mt-4">+ ほか何人かのメンバー</p>
