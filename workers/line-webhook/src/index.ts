@@ -88,6 +88,13 @@ export default {
       const adminIds = env.ADMIN_USER_IDS.split(",");
       if (!adminIds.includes(userId)) {
         console.warn(`Unauthorized user: ${userId}`);
+        if (event.replyToken) {
+          await replyToLine(
+            event.replyToken,
+            "登録する権限が設定されていません。@ウエニシケイタ に権限追加を依頼してください",
+            env
+          );
+        }
         continue;
       }
 
