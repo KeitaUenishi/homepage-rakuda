@@ -713,8 +713,8 @@ async function sendEmailNotification(subject: string, text: string, env: Env) {
       "Authorization": `Bearer ${env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({
-      from: "Ticket System <onboarding@resend.dev>",
-      to: ["k.mottimoti@gmail.com"],
+      from: "Ticket System <no-reply@rakudanokobux.org>",
+      to: ["rakudanokobux@gmail.com"],
       subject: subject,
       text: text,
     }),
