@@ -80,6 +80,3 @@ export async function fetchContentByTag(category: Category, tag: string): Promis
 export async function fetchAllContentByTag(tag: string): Promise<ContentItem[]> {
 	return getAllContentByTag(tag);
 }
-
-
-

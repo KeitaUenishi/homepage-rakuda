@@ -10,6 +10,7 @@ export interface Env {
   GH_BRANCH: string;
   GH_COMMITTER_NAME?: string;
   GH_COMMITTER_EMAIL?: string;
+  RESEND_API_KEY: string;
   KV: KVNamespace;
 }
 
@@ -35,10 +36,29 @@ interface LineWebhookEvent {
 
 export default {
   async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+    const url = new URL(request.url);
+
+    // CORS preflight
+    if (request.method === "OPTIONS") {
+      return new Response(null, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      });
+    }
+
     if (request.method !== "POST") {
       return new Response("Method Not Allowed", { status: 405 });
     }
 
+    // パスによる分岐
+    if (url.pathname === "/api/reservation") {
+      return handleReservation(request, env);
+    }
+
+    // 以降は LINE Webhook 処理
     const signature = request.headers.get("X-Line-Signature");
     if (!signature) {
       return new Response("Missing Signature", { status: 401 });
@@ -68,6 +88,13 @@ export default {
       const adminIds = env.ADMIN_USER_IDS.split(",");
       if (!adminIds.includes(userId)) {
         console.warn(`Unauthorized user: ${userId}`);
+        if (event.replyToken) {
+          await replyToLine(
+            event.replyToken,
+            "登録する権限が設定されていません。@ウエニシケイタ に権限追加を依頼してください",
+            env
+          );
+        }
         continue;
       }
 
@@ -135,6 +162,24 @@ export default {
           continue;
         }
 
+        if (text.startsWith("#release")) {
+          // リリース処理 (preview -> main マージ)
+          try {
+            await mergePreviewToMain(env);
+            
+            if (event.replyToken) {
+              await replyToLine(event.replyToken, "🚀 リリース（マージ）が完了しました！\n本番環境へのデプロイが開始されます。\n反映まで数分お待ちください。", env);
+            }
+            results.push({ eventId, status: "success", type: "release" });
+          } catch (err: any) {
+            if (event.replyToken) {
+              await replyToLine(event.replyToken, `❌ リリースに失敗しました。\n原因: ${err.message}`, env);
+            }
+            throw err;
+          }
+          continue;
+        }
+
         if (!text.startsWith("#live")) {
           // #news 等は 400 エラー
           if (text.startsWith("#")) {
@@ -168,7 +213,13 @@ export default {
             "",
             `登録ファイルのURL: https://github.com/${env.GH_OWNER}/${env.GH_REPO}/blob/${env.GH_BRANCH}/${encodedPath}`,
             "",
-            "※登録情報を削除する場合は上記のIDを指定してください。"
+            `プレビュー中のサイトURL: https://preview.homepage-rakuda.pages.dev`,
+            "",
+            "※現在はpreview環境に反映中です。本番環境への反映は「#release」コマンドを送信すると実行されます。",
+            "※登録した情報を削除する場合は記載されているIDを指定して、以下のメッセージを送信してください。",
+            "",
+            "#delete",
+            `id: ${liveData.id}`
           ].join("\n");
           
           await replyToLine(event.replyToken, replyMessage, env);
@@ -249,6 +300,7 @@ function parseLiveTemplate(text: string) {
     startTime: "",
     price: "",
     subTitle: "",
+    detailUrl: "",
     pickup: false,
     act: []
   };
@@ -315,6 +367,9 @@ function generateLiveMDX(data: any): string {
   mdx += `startTime: "${data.startTime}"\n`;
   mdx += `price: "${escape(data.price)}"\n`;
   mdx += `pickup: ${data.pickup}\n`;
+  if (data.detailUrl) {
+    mdx += `detailUrl: "${escape(data.detailUrl)}"\n`;
+  }
   mdx += `act:\n`;
   if (data.act && data.act.length > 0) {
     for (const a of data.act) {
@@ -531,6 +586,55 @@ async function findFilePathByIdInGitHub(targetId: string, env: Env): Promise<str
 }
 
 /**
+ * GitHub APIで preview ブランチを main にマージ
+ */
+async function mergePreviewToMain(env: Env) {
+  const owner = env.GH_OWNER.trim();
+  const repo = env.GH_REPO.trim();
+  const token = env.GH_TOKEN.trim().replace(/^(token|Bearer)\s+/i, "");
+
+  const url = `https://api.github.com/repos/${owner}/${repo}/merges`;
+  
+  const headers = {
+    "Authorization": `token ${token}`,
+    "User-Agent": "Cloudflare-Worker",
+    "Content-Type": "application/json",
+    "Accept": "application/vnd.github.v3+json"
+  };
+
+  const res = await fetch(url, {
+    method: "POST",
+    headers,
+    body: JSON.stringify({
+      base: "main",
+      head: env.GH_BRANCH.trim(), // preview ブランチ (env.GH_BRANCH)
+      commit_message: "chore: manual release from LINE"
+    })
+  });
+
+  if (res.status === 204) {
+    // すでに最新（マージするものがない）
+    return { status: "already_up_to_date" };
+  }
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    let errorMessage = errorText;
+    try {
+      const errorJson = JSON.parse(errorText);
+      errorMessage = errorJson.message || errorText;
+    } catch (e) {}
+    
+    if (res.status === 409) {
+      throw new Error("マージ競合が発生しました。GitHub上で解決してください。");
+    }
+    throw new Error(`GitHub Merge Error: ${res.status} ${errorMessage}`);
+  }
+
+  return await res.json();
+}
+
+/**
  * LINEに返信を送信
  */
 async function replyToLine(replyToken: string, text: string, env: Env) {
@@ -554,7 +658,71 @@ async function replyToLine(replyToken: string, text: string, env: Env) {
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error(`LINE Reply Error: ${res.status} ${errorText}`);
+    console.error(`LINE Reply Error: status=${res.status}, body=${errorText}, token=${env.LINE_CHANNEL_ACCESS_TOKEN.substring(0, 10)}...`);
+  }
+}
+
+/**
+ * 予約情報を メール に通知
+ */
+async function handleReservation(request: Request, env: Env): Promise<Response> {
+  try {
+    const { name, count, liveTitle, liveDate } = await request.json() as any;
+
+    if (!name || !count || !liveTitle || !liveDate) {
+      return new Response(JSON.stringify({ error: "Missing required fields" }), {
+        status: 400,
+        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      });
+    }
+
+    const messageText = [
+      "🎫 【チケット予約が入りました】",
+      "",
+      `公演: ${liveTitle}`,
+      `日程: ${liveDate}`,
+      `名前: ${name} 様`,
+      `枚数: ${count} 枚`,
+      "",
+      "---",
+      "このメールはシステムより自動送信されています。"
+    ].join("\n");
+
+    await sendEmailNotification(`【チケット予約】${liveTitle} - ${name}様`, messageText, env);
+
+    return new Response(JSON.stringify({ success: true }), {
+      status: 200,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  } catch (err: any) {
+    return new Response(JSON.stringify({ error: err.message }), {
+      status: 500,
+      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+    });
+  }
+}
+
+/**
+ * メール通知を送信 (Resendを使用)
+ */
+async function sendEmailNotification(subject: string, text: string, env: Env) {
+  const res = await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+    },
+    body: JSON.stringify({
+      from: "Ticket System <no-reply@rakudanokobux.org>",
+      to: ["rakudanokobux@gmail.com"],
+      subject: subject,
+      text: text,
+    }),
+  });
+
+  if (!res.ok) {
+    const errorText = await res.text();
+    throw new Error(`Resend API Error: ${res.status} ${errorText}`);
   }
 }
 

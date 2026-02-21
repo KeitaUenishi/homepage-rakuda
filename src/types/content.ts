@@ -30,6 +30,7 @@ export interface LiveFrontmatter {
 	startTime: string;
 	price: string;
 	pickup?: boolean;
+	detailUrl?: string;
 	act?: string[];
 }
 
@@ -83,6 +84,3 @@ export interface ContentListItem {
  * - image_path: text
  * - order: integer
  */
-
-
-

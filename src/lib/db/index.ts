@@ -31,6 +31,3 @@ export type Database = ReturnType<typeof createDb>;
 
 // 現時点ではプレースホルダーとしてexport
 export const DB_READY = false;
-
-
-
