@@ -35,7 +35,11 @@ interface LineWebhookEvent {
 }
 
 export default {
-  async fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     const url = new URL(request.url);
 
     // CORS preflight
@@ -72,196 +76,197 @@ export default {
     }
 
     const payload: { events: LineWebhookEvent[] } = JSON.parse(body);
-    const results: any[] = [];
 
-    for (const event of payload.events) {
-      // 2. テキストメッセージ以外は無視
-      if (event.type !== "message" || event.message?.type !== "text") {
-        continue;
-      }
-
-      const userId = event.source.userId;
-      const eventId = event.webhookEventId;
-      const text = event.message.text;
-
-      // 3. 投稿者制限
-      const adminIds = env.ADMIN_USER_IDS.split(",");
-      if (!adminIds.includes(userId)) {
-        console.warn(`Unauthorized user: ${userId}`);
-        if (event.replyToken) {
-          await replyToLine(
-            event.replyToken,
-            "登録する権限が設定されていません。@ウエニシケイタ に権限追加を依頼してください",
-            env
-          );
-        }
-        continue;
-      }
-
-      // 4. 冪等性チェック
-      const idempotencyKey = `processed:${eventId}`;
-      const isProcessed = await env.KV.get(idempotencyKey);
-      if (isProcessed) {
-        console.info(`Already processed event: ${eventId}`);
-        results.push({ eventId, status: "skipped", reason: "idempotency" });
-        continue;
-      }
-
-      // 5. レート制限 (5秒以内)
-      const rateLimitKey = `ratelimit:${userId}`;
-      const lastProcessTime = await env.KV.get(rateLimitKey);
-      const now = Date.now();
-      if (lastProcessTime && now - parseInt(lastProcessTime) < 5000) {
-        return new Response(JSON.stringify({ error: "Rate limit exceeded" }), { status: 429 });
-      }
-
-      // 6. テンプレ解析
-      try {
-        if (text.startsWith("#delete")) {
-          // 削除処理
-          const deleteId = parseDeleteTemplate(text);
-          if (!deleteId) {
-            throw new Error("削除対象の ID が指定されていないか、形式が正しくありません。");
-          }
-
-          // 1. KV からパスを取得
-          const pathKey = `path:${deleteId}`;
-          let filePath = await env.KV.get(pathKey);
-          
-          if (!filePath) {
-            // KV にない場合、GitHub の content/live 以下の全ファイルを検索して ID を探す (フォールバック)
-            console.info(`ID ${deleteId} not found in KV, searching GitHub...`);
-            filePath = await findFilePathByIdInGitHub(deleteId, env);
-            
-            if (filePath) {
-              // 見つかった場合、次回の高速化のために KV を更新
-              await env.KV.put(pathKey, filePath, { expirationTtl: 31536000 });
-            }
-          }
-          
-          if (!filePath) {
-            if (event.replyToken) {
-              await replyToLine(event.replyToken, `❌ 削除に失敗しました。\n\n指定された ID (${deleteId}) に対応するファイルが見つかりませんでした。すでに削除されているか、IDが間違っている可能性があります。`, env);
-            }
-            results.push({ eventId, status: "failed", reason: "not_found", id: deleteId });
+    // 署名検証後すぐに 200 OK を返す。
+    // replyToken は 200 OK 返却と同時に無効化される LINE 仕様のため、
+    // Push Message API (userId ベース) を使い ctx.waitUntil 内で送信する。
+    ctx.waitUntil(
+      (async () => {
+        for (const event of payload.events) {
+          if (event.type !== "message" || event.message?.type !== "text") {
             continue;
           }
 
-          // 2. GitHub から削除
-          await deleteFromGitHub(filePath, `delete: ${deleteId}`, env);
+          const userId = event.source.userId;
+          const eventId = event.webhookEventId;
+          const text = event.message.text;
 
-          // 3. KV からマッピングを削除
-          await env.KV.delete(pathKey);
+          console.info(`Event received: eventId=${eventId}, userId=${userId}, sourceType=${event.source.type}`);
 
-          // 4. LINE に返信
-          if (event.replyToken) {
-            await replyToLine(event.replyToken, `🗑️ ライブ情報を削除しました。\n\nID: ${deleteId}\n対象ファイル: ${filePath}`, env);
+          if (!userId) {
+            console.warn(`Skipping event without userId: eventId=${eventId}, sourceType=${event.source.type}`);
+            continue;
           }
 
-          results.push({ eventId, status: "success", type: "delete", id: deleteId });
-          continue;
-        }
+          // 投稿者制限
+          const adminIds = env.ADMIN_USER_IDS.split(",");
+          if (!adminIds.includes(userId)) {
+            console.warn(`Unauthorized user: ${userId}`);
+            await pushToLine(
+              userId,
+              "登録する権限が設定されていません。@ウエニシケイタ に権限追加を依頼してください",
+              env,
+            );
+            continue;
+          }
 
-        if (text.startsWith("#release")) {
-          // リリース処理 (preview -> main マージ)
+          // 冪等性チェック
+          const idempotencyKey = `processed:${eventId}`;
+          const isProcessed = await env.KV.get(idempotencyKey);
+          if (isProcessed) {
+            console.info(`Already processed event: ${eventId}`);
+            continue;
+          }
+
+          // レート制限 (5秒以内)
+          const rateLimitKey = `ratelimit:${userId}`;
+          const lastProcessTime = await env.KV.get(rateLimitKey);
+          const now = Date.now();
+          if (lastProcessTime && now - parseInt(lastProcessTime) < 5000) {
+            await pushToLine(
+              userId,
+              "⚠️ 短時間に複数のリクエストを送信しています。少し時間をおいてから再度お試しください。",
+              env,
+            );
+            continue;
+          }
+
           try {
-            await mergePreviewToMain(env);
-            
-            if (event.replyToken) {
-              await replyToLine(event.replyToken, "🚀 リリース（マージ）が完了しました！\n本番環境へのデプロイが開始されます。\n反映まで数分お待ちください。", env);
+            if (text.startsWith("#delete")) {
+              const deleteId = parseDeleteTemplate(text);
+              if (!deleteId) {
+                await pushToLine(
+                  userId,
+                  "❌ 削除対象の ID が指定されていないか、形式が正しくありません。",
+                  env,
+                );
+                continue;
+              }
+
+              const pathKey = `path:${deleteId}`;
+              let filePath = await env.KV.get(pathKey);
+              if (!filePath) {
+                console.info(
+                  `ID ${deleteId} not found in KV, searching GitHub...`,
+                );
+                filePath = await findFilePathByIdInGitHub(deleteId, env);
+                if (filePath) {
+                  await env.KV.put(pathKey, filePath, {
+                    expirationTtl: 31536000,
+                  });
+                }
+              }
+
+              if (!filePath) {
+                await pushToLine(
+                  userId,
+                  `❌ 削除に失敗しました。\n\n指定された ID (${deleteId}) に対応するファイルが見つかりませんでした。すでに削除されているか、ID が間違っている可能性があります。`,
+                  env,
+                );
+                continue;
+              }
+
+              await deleteFromGitHub(filePath, `delete: ${deleteId}`, env);
+              await env.KV.delete(pathKey);
+              await pushToLine(
+                userId,
+                `🗑️ ライブ情報を削除しました。\n\nID: ${deleteId}\n\nプレビューURL: https://preview.homepage-rakuda.pages.dev/`,
+                env,
+              );
+              continue;
             }
-            results.push({ eventId, status: "success", type: "release" });
+
+            if (text.startsWith("#release")) {
+              const result = await mergePreviewToMain(env);
+              const msg =
+                (result as any).status === "already_up_to_date"
+                  ? "ℹ️ すでに最新です。マージするコミットはありません。"
+                  : "🚀 リリース（マージ）が完了しました！\n本番環境への反映が開始されます。\n反映まで数分お待ちください。\n\nプレビューURL: https://preview.homepage-rakuda.pages.dev/";
+              await pushToLine(userId, msg, env);
+              continue;
+            }
+
+            if (text.startsWith("#")) {
+              if (!text.startsWith("#live")) {
+                await pushToLine(
+                  userId,
+                  `❌ 「${text.split("\n")[0]}」コマンドは現在サポートされていません。利用可能なコマンドは #live, #delete, #release です。`,
+                  env,
+                );
+                continue;
+              }
+            } else {
+              continue;
+            }
+
+            // #live の処理
+            const liveData = parseLiveTemplate(text);
+            liveData.id = crypto.randomUUID();
+            const mdxContent = generateLiveMDX(liveData);
+            const slug = generateSlug(liveData.title);
+            const filePath = `content/live/${liveData.date}-${slug}.mdx`;
+
+            await commitToGitHub(
+              filePath,
+              mdxContent,
+              `live: ${liveData.title}`,
+              env,
+            );
+            await env.KV.put(`path:${liveData.id}`, filePath, {
+              expirationTtl: 31536000,
+            });
+            await env.KV.put(idempotencyKey, "true", { expirationTtl: 86400 });
+            await env.KV.put(rateLimitKey, now.toString(), {
+              expirationTtl: 60,
+            });
+
+            const successMessage = [
+              "✅ ライブ情報を登録しました！",
+              "",
+              `ID: ${liveData.id}`,
+              `タイトル: ${liveData.title}`,
+              `日付: ${liveData.date}`,
+              `会場: ${liveData.venue}`,
+              "",
+              `プレビューURL: https://preview.homepage-rakuda.pages.dev/`,
+              "",
+              "※本番反映は「#release」コマンドを送信してください。",
+              "※削除用 ID:",
+              liveData.id,
+            ].join("\n");
+
+            await pushToLine(userId, successMessage, env);
           } catch (err: any) {
-            if (event.replyToken) {
-              await replyToLine(event.replyToken, `❌ リリースに失敗しました。\n原因: ${err.message}`, env);
-            }
-            throw err;
+            console.error(`Error processing event ${eventId}:`, err);
+            await pushToLine(
+              userId,
+              `❌ エラーが発生しました。\n\n原因: ${err.message}`,
+              env,
+            );
           }
-          continue;
         }
+      })(),
+    );
 
-        if (!text.startsWith("#live")) {
-          // #news 等は 400 エラー
-          if (text.startsWith("#")) {
-            return new Response(JSON.stringify({ error: "Only #live is supported in this release" }), { status: 400 });
-          }
-          continue; 
-        }
-
-        const liveData = parseLiveTemplate(text);
-        liveData.id = crypto.randomUUID(); // 固有IDを生成
-        const mdxContent = generateLiveMDX(liveData);
-        const slug = generateSlug(liveData.title);
-        const filePath = `content/live/${liveData.date}-${slug}.mdx`;
-        const encodedPath = filePath.split('/').map(segment => encodeURIComponent(segment)).join('/');
-
-        // 7. GitHub APIでコミット
-        const commitResult = await commitToGitHub(filePath, mdxContent, `live: ${liveData.title}`, env);
-
-        // 8. ID とパスのマッピングを KV に保存（削除用）
-        await env.KV.put(`path:${liveData.id}`, filePath, { expirationTtl: 31536000 }); // 1年間保持
-
-        // 9. LINEに返信
-        if (event.replyToken) {
-          const replyMessage = [
-            "✅ ライブ情報を登録しました！",
-            "",
-            `ID: ${liveData.id}`,
-            `タイトル: ${liveData.title}`,
-            `日付: ${liveData.date}`,
-            `会場: ${liveData.venue}`,
-            "",
-            `登録ファイルのURL: https://github.com/${env.GH_OWNER}/${env.GH_REPO}/blob/${env.GH_BRANCH}/${encodedPath}`,
-            "",
-            `プレビュー中のサイトURL: https://preview.homepage-rakuda.pages.dev`,
-            "",
-            "※現在はpreview環境に反映中です。本番環境への反映は「#release」コマンドを送信すると実行されます。",
-            "※登録した情報を削除する場合は記載されているIDを指定して、以下のメッセージを送信してください。",
-            "",
-            "#delete",
-            `id: ${liveData.id}`
-          ].join("\n");
-          
-          await replyToLine(event.replyToken, replyMessage, env);
-        }
-
-        // 10. 成功時、KVに記録
-        await env.KV.put(idempotencyKey, "true", { expirationTtl: 86400 }); // 24h
-        await env.KV.put(rateLimitKey, now.toString(), { expirationTtl: 60 });
-
-        results.push({
-          eventId,
-          status: "success",
-          type: "create",
-          path: filePath,
-          slug,
-          sha: commitResult.content.sha
-        });
-
-      } catch (err: any) {
-        console.error(`Error processing event ${eventId}:`, err);
-        return new Response(JSON.stringify({ error: err.message }), { status: 400 });
-      }
-    }
-
-    return new Response(JSON.stringify({ results }), {
-      status: 200,
-      headers: { "Content-Type": "application/json" }
-    });
+    return new Response("OK", { status: 200 });
   },
 };
 
 /**
  * LINE署名検証
  */
-async function verifySignature(body: string, signature: string, secret: string): Promise<boolean> {
+async function verifySignature(
+  body: string,
+  signature: string,
+  secret: string,
+): Promise<boolean> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
     "raw",
     encoder.encode(secret),
     { name: "HMAC", hash: "SHA-256" },
     false,
-    ["sign"]
+    ["sign"],
   );
   const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(body));
   const base64Sig = btoa(String.fromCharCode(...new Uint8Array(sig)));
@@ -272,11 +277,15 @@ async function verifySignature(body: string, signature: string, secret: string):
  * 削除テンプレ解析
  */
 function parseDeleteTemplate(text: string): string | null {
-  const lines = text.split("\n").map(l => l.trim());
+  const lines = text.split("\n").map((l) => l.trim());
   for (const line of lines) {
     if (line.toLowerCase().startsWith("id:")) {
       // 引用符や空白、末尾の記号などをより強力に除去
-      return line.slice(3).trim().replace(/^["']|["']$/g, "").trim();
+      return line
+        .slice(3)
+        .trim()
+        .replace(/^["']|["']$/g, "")
+        .trim();
     }
   }
   // 1行目に ID が直接書かれている場合 (#delete uuid...)
@@ -291,7 +300,7 @@ function parseDeleteTemplate(text: string): string | null {
  * ライブテンプレ解析
  */
 function parseLiveTemplate(text: string) {
-  const lines = text.split("\n").map(l => l.trim());
+  const lines = text.split("\n").map((l) => l.trim());
   const data: any = {
     title: "",
     date: "",
@@ -302,7 +311,7 @@ function parseLiveTemplate(text: string) {
     subTitle: "",
     detailUrl: "",
     pickup: false,
-    act: []
+    act: [],
   };
 
   let currentKey = "";
@@ -355,7 +364,7 @@ function parseLiveTemplate(text: string) {
  */
 function generateLiveMDX(data: any): string {
   const escape = (str: string) => str.replace(/"/g, '\\"');
-  
+
   let mdx = "---\n";
   mdx += `id: "${data.id}"\n`;
   mdx += `title: "${escape(data.title)}"\n`;
@@ -377,7 +386,7 @@ function generateLiveMDX(data: any): string {
     }
   }
   mdx += "---\n";
-  
+
   return mdx;
 }
 
@@ -395,7 +404,12 @@ function generateSlug(title: string): string {
 /**
  * GitHub APIでコミット
  */
-async function commitToGitHub(path: string, content: string, message: string, env: Env) {
+async function commitToGitHub(
+  path: string,
+  content: string,
+  message: string,
+  env: Env,
+) {
   // 1. 環境変数のクリーンアップ（空白除去と、トークンプレフィックスの正規化）
   const owner = env.GH_OWNER.trim();
   const repo = env.GH_REPO.trim();
@@ -403,18 +417,21 @@ async function commitToGitHub(path: string, content: string, message: string, en
   const token = env.GH_TOKEN.trim().replace(/^(token|Bearer)\s+/i, "");
 
   // 2. パスをURL用に安全にエンコード（スラッシュは維持、各セグメントをエンコード）
-  const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/');
+  const encodedPath = path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}`;
-  
+
   const commonHeaders = {
-    "Authorization": `token ${token}`, // より汎用的な 'token' プレフィックスを使用
+    Authorization: `token ${token}`, // より汎用的な 'token' プレフィックスを使用
     "User-Agent": "Cloudflare-Worker",
-    "Accept": "application/vnd.github.v3+json"
+    Accept: "application/vnd.github.v3+json",
   };
 
   // 3. 既存ファイルのSHAを取得
   const getResp = await fetch(url + (branch ? `?ref=${branch}` : ""), {
-    headers: commonHeaders
+    headers: commonHeaders,
   });
 
   let sha: string | undefined;
@@ -439,17 +456,17 @@ async function commitToGitHub(path: string, content: string, message: string, en
   const putBody: any = {
     message,
     content: base64Content,
-    branch: branch
+    branch: branch,
   };
-  
+
   if (sha) {
     putBody.sha = sha;
   }
-  
+
   if (env.GH_COMMITTER_NAME?.trim() && env.GH_COMMITTER_EMAIL?.trim()) {
     putBody.committer = {
       name: env.GH_COMMITTER_NAME.trim(),
-      email: env.GH_COMMITTER_EMAIL.trim()
+      email: env.GH_COMMITTER_EMAIL.trim(),
     };
   }
 
@@ -459,7 +476,7 @@ async function commitToGitHub(path: string, content: string, message: string, en
       ...commonHeaders,
       "Content-Type": "application/json",
     },
-    body: JSON.stringify(putBody)
+    body: JSON.stringify(putBody),
   });
 
   if (!putResp.ok) {
@@ -475,7 +492,7 @@ async function commitToGitHub(path: string, content: string, message: string, en
     throw new Error(`GitHub PUT Error: ${putResp.status} ${errorMessage}`);
   }
 
-  return await putResp.json() as any;
+  return (await putResp.json()) as any;
 }
 
 /**
@@ -487,23 +504,28 @@ async function deleteFromGitHub(path: string, message: string, env: Env) {
   const branch = env.GH_BRANCH.trim();
   const token = env.GH_TOKEN.trim().replace(/^(token|Bearer)\s+/i, "");
 
-  const encodedPath = path.split('/').map(segment => encodeURIComponent(segment)).join('/');
+  const encodedPath = path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/");
   const url = `https://api.github.com/repos/${owner}/${repo}/contents/${encodedPath}`;
-  
+
   const commonHeaders = {
-    "Authorization": `token ${token}`,
+    Authorization: `token ${token}`,
     "User-Agent": "Cloudflare-Worker",
-    "Accept": "application/vnd.github.v3+json"
+    Accept: "application/vnd.github.v3+json",
   };
 
   // 1. ファイルの SHA を取得
   const getResp = await fetch(url + (branch ? `?ref=${branch}` : ""), {
-    headers: commonHeaders
+    headers: commonHeaders,
   });
 
   if (getResp.status !== 200) {
     const errorText = await getResp.text();
-    throw new Error(`GitHub GET Error (for delete): ${getResp.status} ${errorText}`);
+    throw new Error(
+      `GitHub GET Error (for delete): ${getResp.status} ${errorText}`,
+    );
   }
 
   const data: any = await getResp.json();
@@ -519,8 +541,8 @@ async function deleteFromGitHub(path: string, message: string, env: Env) {
     body: JSON.stringify({
       message,
       sha,
-      branch
-    })
+      branch,
+    }),
   });
 
   if (!deleteResp.ok) {
@@ -534,7 +556,10 @@ async function deleteFromGitHub(path: string, message: string, env: Env) {
 /**
  * GitHub 上のファイルを走査して ID に合致するファイルを探す (リアルタイム走査)
  */
-async function findFilePathByIdInGitHub(targetId: string, env: Env): Promise<string | null> {
+async function findFilePathByIdInGitHub(
+  targetId: string,
+  env: Env,
+): Promise<string | null> {
   const owner = env.GH_OWNER.trim();
   const repo = env.GH_REPO.trim();
   const branch = env.GH_BRANCH.trim();
@@ -542,47 +567,51 @@ async function findFilePathByIdInGitHub(targetId: string, env: Env): Promise<str
 
   // 1. content/live 以下のファイル一覧を直接取得
   const dirUrl = `https://api.github.com/repos/${owner}/${repo}/contents/content/live?ref=${branch}`;
-  
+
   const headers = {
-    "Authorization": `token ${token}`,
+    Authorization: `token ${token}`,
     "User-Agent": "Cloudflare-Worker",
-    "Accept": "application/vnd.github.v3+json"
+    Accept: "application/vnd.github.v3+json",
   };
 
   const res = await fetch(dirUrl, { headers });
-  
+
   if (!res.ok) {
     console.error(`GitHub API Error (List Dir): ${res.status}`);
     return null;
   }
 
-  const files = await res.json() as any[];
-  const mdxFiles = files.filter(f => f.type === "file" && f.name.endsWith(".mdx"));
+  const files = (await res.json()) as any[];
+  const mdxFiles = files.filter(
+    (f) => f.type === "file" && f.name.endsWith(".mdx"),
+  );
 
   // 2. 全 MDX ファイルの内容を並列で取得して ID を照合
-  const results = await Promise.all(mdxFiles.map(async (file) => {
-    try {
-      // ファイルの生データを取得
-      const fileRes = await fetch(file.url, { headers });
-      if (!fileRes.ok) return null;
-      
-      const fileData = await fileRes.json() as any;
-      // Base64 デコード (改行を除去)
-      const binaryString = atob(fileData.content.replace(/\s/g, ""));
-      
-      // ID が一致するか確認 (正規表現でクォートの有無に対応)
-      const idPattern = new RegExp(`id:\\s*["']?${targetId}["']?`, "i");
-      if (idPattern.test(binaryString)) {
-        return file.path;
+  const results = await Promise.all(
+    mdxFiles.map(async (file) => {
+      try {
+        // ファイルの生データを取得
+        const fileRes = await fetch(file.url, { headers });
+        if (!fileRes.ok) return null;
+
+        const fileData = (await fileRes.json()) as any;
+        // Base64 デコード (改行を除去)
+        const binaryString = atob(fileData.content.replace(/\s/g, ""));
+
+        // ID が一致するか確認 (正規表現でクォートの有無に対応)
+        const idPattern = new RegExp(`id:\\s*["']?${targetId}["']?`, "i");
+        if (idPattern.test(binaryString)) {
+          return file.path;
+        }
+      } catch (e) {
+        console.error(`Error checking file ${file.path}:`, e);
       }
-    } catch (e) {
-      console.error(`Error checking file ${file.path}:`, e);
-    }
-    return null;
-  }));
+      return null;
+    }),
+  );
 
   // 最初にマッチしたファイルパスを返す
-  return results.find(path => path !== null) || null;
+  return results.find((path) => path !== null) || null;
 }
 
 /**
@@ -594,12 +623,12 @@ async function mergePreviewToMain(env: Env) {
   const token = env.GH_TOKEN.trim().replace(/^(token|Bearer)\s+/i, "");
 
   const url = `https://api.github.com/repos/${owner}/${repo}/merges`;
-  
+
   const headers = {
-    "Authorization": `token ${token}`,
+    Authorization: `token ${token}`,
     "User-Agent": "Cloudflare-Worker",
     "Content-Type": "application/json",
-    "Accept": "application/vnd.github.v3+json"
+    Accept: "application/vnd.github.v3+json",
   };
 
   const res = await fetch(url, {
@@ -608,8 +637,8 @@ async function mergePreviewToMain(env: Env) {
     body: JSON.stringify({
       base: "main",
       head: env.GH_BRANCH.trim(), // preview ブランチ (env.GH_BRANCH)
-      commit_message: "chore: manual release from LINE"
-    })
+      commit_message: "chore: manual release from LINE",
+    }),
   });
 
   if (res.status === 204) {
@@ -624,7 +653,7 @@ async function mergePreviewToMain(env: Env) {
       const errorJson = JSON.parse(errorText);
       errorMessage = errorJson.message || errorText;
     } catch (e) {}
-    
+
     if (res.status === 409) {
       throw new Error("マージ競合が発生しました。GitHub上で解決してください。");
     }
@@ -635,45 +664,81 @@ async function mergePreviewToMain(env: Env) {
 }
 
 /**
- * LINEに返信を送信
+ * LINE Push Message API でメッセージを送信 (replyToken 不要)
+ * replyToken は 200 OK 返却と同時に無効化されるため、
+ * ctx.waitUntil 内では Push API を使用する。
  */
-async function replyToLine(replyToken: string, text: string, env: Env) {
-  const url = "https://api.line.me/v2/bot/message/reply";
+async function pushToLine(userId: string, text: string, env: Env) {
+  const url = "https://api.line.me/v2/bot/message/push";
   const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}`
+      Authorization: `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}`,
     },
     body: JSON.stringify({
-      replyToken,
-      messages: [
-        {
-          type: "text",
-          text
-        }
-      ]
-    })
+      to: userId,
+      messages: [{ type: "text", text }],
+    }),
   });
 
   if (!res.ok) {
     const errorText = await res.text();
-    console.error(`LINE Reply Error: status=${res.status}, body=${errorText}, token=${env.LINE_CHANNEL_ACCESS_TOKEN.substring(0, 10)}...`);
+    console.error(`LINE Push Error: status=${res.status}, body=${errorText}, userId=${userId}`);
   }
 }
+
+// /**
+//  * LINEに返信を送信
+//  */
+// async function replyToLine(replyToken: string, text: string, env: Env) {
+//   const url = "https://api.line.me/v2/bot/message/reply";
+//   const res = await fetch(url, {
+//     method: "POST",
+//     headers: {
+//       "Content-Type": "application/json",
+//       Authorization: `Bearer ${env.LINE_CHANNEL_ACCESS_TOKEN}`,
+//     },
+//     body: JSON.stringify({
+//       replyToken,
+//       messages: [
+//         {
+//           type: "text",
+//           text,
+//         },
+//       ],
+//     }),
+//   });
+
+//   if (!res.ok) {
+//     const errorText = await res.text();
+//     console.error(
+//       `LINE Reply Error: status=${res.status}, body=${errorText}, token=${env.LINE_CHANNEL_ACCESS_TOKEN.substring(0, 10)}...`,
+//     );
+//   }
+// }
 
 /**
  * 予約情報を メール に通知
  */
-async function handleReservation(request: Request, env: Env): Promise<Response> {
+async function handleReservation(
+  request: Request,
+  env: Env,
+): Promise<Response> {
   try {
-    const { name, count, liveTitle, liveDate } = await request.json() as any;
+    const { name, count, liveTitle, liveDate } = (await request.json()) as any;
 
     if (!name || !count || !liveTitle || !liveDate) {
-      return new Response(JSON.stringify({ error: "Missing required fields" }), {
-        status: 400,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
-      });
+      return new Response(
+        JSON.stringify({ error: "Missing required fields" }),
+        {
+          status: 400,
+          headers: {
+            "Content-Type": "application/json",
+            "Access-Control-Allow-Origin": "*",
+          },
+        },
+      );
     }
 
     const messageText = [
@@ -685,19 +750,29 @@ async function handleReservation(request: Request, env: Env): Promise<Response> 
       `枚数: ${count} 枚`,
       "",
       "---",
-      "このメールはシステムより自動送信されています。"
+      "このメールはシステムより自動送信されています。",
     ].join("\n");
 
-    await sendEmailNotification(`【チケット予約】${liveTitle} - ${name}様`, messageText, env);
+    await sendEmailNotification(
+      `【チケット予約】${liveTitle} - ${name}様`,
+      messageText,
+      env,
+    );
 
     return new Response(JSON.stringify({ success: true }), {
       status: 200,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
     });
   } catch (err: any) {
     return new Response(JSON.stringify({ error: err.message }), {
       status: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" }
+      headers: {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      },
     });
   }
 }
@@ -710,7 +785,7 @@ async function sendEmailNotification(subject: string, text: string, env: Env) {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "Authorization": `Bearer ${env.RESEND_API_KEY}`,
+      Authorization: `Bearer ${env.RESEND_API_KEY}`,
     },
     body: JSON.stringify({
       from: "Ticket System <no-reply@rakudanokobux.org>",
@@ -725,6 +800,3 @@ async function sendEmailNotification(subject: string, text: string, env: Env) {
     throw new Error(`Resend API Error: ${res.status} ${errorText}`);
   }
 }
-
-
-
