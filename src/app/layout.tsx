@@ -11,6 +11,7 @@ const zenMaruGothic = Zen_Maru_Gothic({
 });
 
 export const metadata: Metadata = {
+	metadataBase: new URL("https://rakudanokobux.org"),
 	title: "らくだのこぶX | 何人編成か分かりづらいバンド",
 	description:
 		"このジャンルでこんなにギターいらんやろ、のバンドです。8人編成の大阪発ロックバンド「らくだのこぶX」公式サイト",
@@ -20,10 +21,28 @@ export const metadata: Metadata = {
 		description: "このジャンルでこんなにギターいらんやろ、のバンド",
 		type: "website",
 		locale: "ja_JP",
+		images: [
+			{
+				url: "/rakudanokobu-x-profile.jpg",
+				width: 400,
+				height: 400,
+				alt: "らくだのこぶX アーティスト写真",
+			},
+		],
 	},
 	twitter: {
-		card: "summary_large_image",
+		card: "summary",
 		site: "@rakuda_no_kobu",
+		images: ["/rakudanokobu-x-profile.jpg"],
+	},
+	icons: {
+		icon: [
+			{ url: "/favicon-16x16.png", sizes: "16x16", type: "image/png" },
+			{ url: "/favicon-32x32.png", sizes: "32x32", type: "image/png" },
+			{ url: "/icon-192.png", sizes: "192x192", type: "image/png" },
+			{ url: "/icon-512.png", sizes: "512x512", type: "image/png" },
+		],
+		apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
 	},
 };
 
