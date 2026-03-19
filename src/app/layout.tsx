@@ -23,17 +23,17 @@ export const metadata: Metadata = {
 		locale: "ja_JP",
 		images: [
 			{
-				url: "/rakudanokobu-x-profile.jpg",
-				width: 400,
-				height: 400,
+				url: "/ogp.jpg",
+				width: 1200,
+				height: 630,
 				alt: "らくだのこぶX アーティスト写真",
 			},
 		],
 	},
 	twitter: {
-		card: "summary",
+		card: "summary_large_image",
 		site: "@rakuda_no_kobu",
-		images: ["/rakudanokobu-x-profile.jpg"],
+		images: ["/ogp.jpg"],
 	},
 	icons: {
 		icon: [
